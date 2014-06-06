@@ -19,7 +19,7 @@ setwd(file.path(root_dir, 'dengueForecastAnalyses'))
 ## pull data from DB ##
 #######################
 
-## setup data pulls
+## setup data pulls, ssh connection to zaraza needs to be established
 source('../dengue/shared_data.R')
 
 ## helper functions for aggregation 

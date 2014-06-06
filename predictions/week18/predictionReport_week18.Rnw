@@ -90,14 +90,14 @@ outbreak_prob_by_region <- aggregate(outbreak.prob, by=list(region=prov_region),
 #colnames(outbreak_prob_by_region) <- c("region", paste("week", CURRENT_WEEK-seq(8, -2, by=-2)))
 melted_outbreak_probs <- melt(outbreak_prob_by_region, id.vars="region")
 ggplot(melted_outbreak_probs) + theme(legend.position="none") + xlab(NULL) + ylab(NULL) +
-        scale_fill_gradient2(low="white", mid="yellow", high="red", midpoint=.5) +
+        scale_fill_gradient2(low="palegoldenrod", mid="orange", high="red", midpoint=.5) +
         geom_tile(aes(x=variable, y=region, fill=value)) +
         geom_text(aes(x=variable, y=region, label=round(value*100))) +
         scale_y_continuous(breaks=0:12, labels=paste("MOPH Region", 0:12))
 @
 
 \section*{Executive summary}
-This file presents the current forecasts for dengue fever in Thailand, based on data from the Thai Ministry of Public Health. The data in this report was transmitted to researchers at UMass-Amherst and Johns Hopkins University on 4 April 2014 and runs through surveillance ``Week \Sexpr{CURRENT_WEEK}'' of 2014. 
+This file presents the current forecasts for dengue fever in Thailand, based on data from the Thai Ministry of Public Health. The data in this report was transmitted to researchers at UMass-Amherst and Johns Hopkins University and runs through surveillance ``Week \Sexpr{CURRENT_WEEK}'' of 2014. 
 
 The forecasts presented here are based on models that have been fit to data from Week 1 2004 through Week \Sexpr{CURRENT_WEEK-8} 2014. Based on historical reporting patterns, we have seen that most provinces take up to 8 weeks to have fully reported data. So we have gone back 8 weeks from the current time, and predicted forward 12 weeks (or 6 bi-week periods). Our model creates forecasts for each of the 77 Thai provinces. For each province, the forecast is based on (1) seasonal dynamics of dengue in that province, and (2) observed case counts at the previous time-point from that province and from two other provinces that have historically shown strong correlations with this one.  
 
@@ -158,7 +158,7 @@ layout(matrix(1:12, nrow=4, byrow=TRUE))
 par(mar=c(0,0,0,0))
 for(i in 1:ncol(outbreak.prob)){
         plot(dat, outbreak.prob[,i], col.lims=c(0,1), 
-             colorRampPalette(c("blue","white","red"))(100))
+             colorRampPalette(c("palegoldenrod", "orange", "red"))(100))
 }
 @
 

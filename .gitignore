@@ -22,7 +22,7 @@
 *.aux
 
 ## ignoring reports generated
-*week[1-9].pdf
+*week[1-9][1-9].pdf
 *week[1-9][1-9].tex
 *cache/
 *figure/
