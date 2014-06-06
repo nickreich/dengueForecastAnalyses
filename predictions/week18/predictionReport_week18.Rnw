@@ -1,0 +1,171 @@
+\documentclass[11pt]{article} % article?
+\usepackage{geometry} %
+\geometry{a4paper} % or letter or a5paper or ... etc
+\usepackage{graphicx}
+\usepackage{amssymb,amsmath}
+\geometry{letterpaper, top=1in, left=1in, right=1in, bottom=1in} % to set margins
+
+\usepackage{draftwatermark}
+\SetWatermarkText{DRAFT}
+\SetWatermarkScale{8}
+
+\usepackage{setspace}
+\onehalfspacing
+
+
+\title{Real-time Forecasts of Dengue Fever in Thailand}
+\author{Nicholas Reich, Krzysztof Sakrejda, Hannah Clapham, \\ Henrik Salje, Derek Cummings, Justin Lessler}
+
+%%% BEGIN DOCUMENT
+\begin{document}
+
+
+\maketitle
+
+<<defineWeek, echo=FALSE>>=
+CURRENT_WEEK <- 18
+@
+
+<<setup, echo=FALSE, message=FALSE>>=
+require(xtable)
+require(ggplot2)
+require(reshape2)
+setwd("~/Documents/code_versioned/spamd/")
+source("trunk/source/dengpred/R/Utility.r")
+source.deng.pred("trunk/source/dengpred/R/")
+source("trunk/manuscripts/realTimeForecasting/code/spatialPlotting.R")
+load(file.path(aggregated_data_dir, 'standard_wide_format', fname))
+load("trunk/manuscripts/realTimeForecasting/predictions/THA_adm1.RData")
+prov_data <- read.csv("trunk/manuscripts/realTimeForecasting/predictions/thaiProvinces.csv")
+@
+
+<<dataProcessing, echo=FALSE, message=FALSE, cache=TRUE>>=
+## making a cntry.data object
+pnames <- as.character(province_names)
+
+## merging Nong Khai and Bueng Kan
+idx_NK <- which(pnames=="Nong Khai")
+idx_BK <- which(pnames=="Bueng Kan")
+
+count_matrix[idx_BK,][is.na(count_matrix[idx_BK,])] <- 0
+
+count_matrix[idx_NK,] <- count_matrix[idx_NK,] + count_matrix[idx_BK,]
+count_matrix <- count_matrix[-idx_BK,]
+fips <- fips[-idx_BK]
+pnames <- pnames[-idx_BK]
+pop <- pop[-idx_BK]
+
+## matching FIPS into the spatial data frame
+gadm@data$FIPS_ADMIN <- as.character(fips[match(gadm@data$NAME_1, pnames)])
+
+dat <- new.cntry.data(case.counts = count_matrix,
+                      time.info = time_matrix,
+                      fips = fips,
+                      names = pnames,
+                      pop.data = pop,
+                      loc.info = gadm)
+@
+
+
+<<runForecasts, echo=FALSE, message=FALSE, cache=TRUE>>=
+## run forecasts
+cutoff_date <- 2014 + (CURRENT_WEEK-8)/52 ## starting 8 weeks ago
+den_sub  <- subset(dat, t.criteria=dat@t<cutoff_date)
+den_smooth <- smooth.cdata(den_sub)
+
+## chosen 3 tops and lag 1 based on plots of MASE across all provinces from 
+##    casePredictionStepsFwd.R
+##    predictionPerformance_09132013a.rda
+den_mdl <- fit.cntry.pred.mdl(den_smooth, num.tops=3, cor.lags=1)
+
+den_forecast = forecast(den_mdl, den_smooth, steps=6, stochastic=T, verbose=T, 
+                        MC.sims=100, predictions.only=T, num.cores=18)
+outbreak.prob <- get.outbreak.probability(den_forecast, den_smooth)
+colnames(outbreak.prob) <- paste("week", CURRENT_WEEK-seq(8, -2, by=-2))
+@
+
+<<outbreakProbByRegion, echo=FALSE, fig.cap="Average outbreak probabilities (shown as percentages) for each MOPH region at the predicted biweekly timepoints.">>=
+prov_region <- prov_data[match(dat@loc.info@data$FIPS_ADMIN, prov_data$fips), "MOPH_Admin_Code"]
+outbreak_prob_by_region <- aggregate(outbreak.prob, by=list(region=prov_region), FUN=mean)
+#colnames(outbreak_prob_by_region) <- c("region", paste("week", CURRENT_WEEK-seq(8, -2, by=-2)))
+melted_outbreak_probs <- melt(outbreak_prob_by_region, id.vars="region")
+ggplot(melted_outbreak_probs) + theme(legend.position="none") + xlab(NULL) + ylab(NULL) +
+        scale_fill_gradient2(low="white", mid="yellow", high="red", midpoint=.5) +
+        geom_tile(aes(x=variable, y=region, fill=value)) +
+        geom_text(aes(x=variable, y=region, label=round(value*100))) +
+        scale_y_continuous(breaks=0:12, labels=paste("MOPH Region", 0:12))
+@
+
+\section*{Executive summary}
+This file presents the current forecasts for dengue fever in Thailand, based on data from the Thai Ministry of Public Health. The data in this report was transmitted to researchers at UMass-Amherst and Johns Hopkins University on 4 April 2014 and runs through surveillance ``Week \Sexpr{CURRENT_WEEK}'' of 2014. 
+
+The forecasts presented here are based on models that have been fit to data from Week 1 2004 through Week \Sexpr{CURRENT_WEEK-8} 2014. Based on historical reporting patterns, we have seen that most provinces take up to 8 weeks to have fully reported data. So we have gone back 8 weeks from the current time, and predicted forward 12 weeks (or 6 bi-week periods). Our model creates forecasts for each of the 77 Thai provinces. For each province, the forecast is based on (1) seasonal dynamics of dengue in that province, and (2) observed case counts at the previous time-point from that province and from two other provinces that have historically shown strong correlations with this one.  
+
+{\bf These forecasts should be considered preliminary drafts, as we are still working on validating these models and results.} 
+
+\begin{table}[htdp]
+\caption{Summary of relevant dates for this report}
+\begin{center}
+\begin{tabular}{rl}
+Data received for: & Week \Sexpr{CURRENT_WEEK} (biweek \Sexpr{CURRENT_WEEK/2}) \\
+Data assumed complete through: & Week \Sexpr{CURRENT_WEEK-8} (biweek \Sexpr{(CURRENT_WEEK-8)/2}) \\
+Forecasts made for: & Biweeks 
+\Sexpr{(CURRENT_WEEK-8)/2+1}, 
+\Sexpr{(CURRENT_WEEK-8)/2+2}, 
+\Sexpr{(CURRENT_WEEK-8)/2+3}, 
+\Sexpr{(CURRENT_WEEK-8)/2+4}, 
+\Sexpr{(CURRENT_WEEK-8)/2+5}, 
+\Sexpr{(CURRENT_WEEK-8)/2+6} \\
+\end{tabular}
+\end{center}
+\label{default}
+\end{table}%
+
+%\section*{Key results}
+%At this time, we forecast that no provinces have a greater than 50\% probability of an outbreak through biweek 7. The figures on the following pages show the observed data (red lines) and our predictions (solid black lines) with confidence intervals (dashed black lines). 
+
+
+%To dos:
+%\begin{itemize}
+
+%        \item sort provinces by region
+%        \item provide annotated graphic at beginning?
+%        \item add more informative temporal labels on spatial graphic
+        
+%\end{itemize}
+
+
+<<makePlots, echo=FALSE, fig.height=10, message=FALSE>>=
+par(mfrow=c(8,1), mar=c(1, 2, 1, 1))
+for(prov in 1:nrow(dat)){
+        start <- 2012
+        idx <- which(dat@t>=start & dat@t<2015)
+        top <- max(dat[prov,idx], den_forecast[prov,], na.rm=TRUE)
+        plot.prediction(prov, den_forecast, ylim=c(0, top), xlim=c(start, 2014+(CURRENT_WEEK+3)/52), lwd=2, xaxt="n")
+        axis(1, at=2012:2014, labels=FALSE)
+        axis(1, at=seq(2012.5, 2014.5, by=1), labels=2012:2014, 
+             tick=FALSE, line=-.75)
+        lines(dat@t, dat[prov,], col="red", lwd=2)
+        #lines(den_smooth@t, den_smooth[prov,], col="red", lwd=2)
+        abline(v=2014+(CURRENT_WEEK-8)/52, lty=2, col="gray", lwd=2)
+        abline(v=2014+CURRENT_WEEK/52, lty=2, col="gray", lwd=2)
+        text(start, y=top*.9, labels=dat@names[prov], cex=1.5, pos=4)
+}
+@
+
+<<makeSpatialPlot, echo=FALSE, eval=FALSE, dev='png'>>=
+layout(matrix(1:12, nrow=4, byrow=TRUE))
+par(mar=c(0,0,0,0))
+for(i in 1:ncol(outbreak.prob)){
+        plot(dat, outbreak.prob[,i], col.lims=c(0,1), 
+             colorRampPalette(c("blue","white","red"))(100))
+}
+@
+
+<<makeSpatialPlotGG, eval=TRUE, dpi=200, echo=FALSE, message=FALSE, fig.cap="Outbreak probabilities", dev="png">>=
+ggplot.cntry.data(den_forecast, outbreak.prob)
+@
+
+
+
+\end{document}

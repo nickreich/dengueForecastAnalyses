@@ -8,3 +8,21 @@
 *.Rdata
 *.Rproj.user
 *.Rproj
+
+## garbage tex files
+*.syncte*
+*-concordance.tex
+*.log
+*.gz
+.DS_Store
+*.nav
+*.toc
+*.snm
+*.vrb
+*.aux
+
+## ignoring reports generated
+*week[1-9].pdf
+*week[1-9][1-9].tex
+*cache/
+*figure/
