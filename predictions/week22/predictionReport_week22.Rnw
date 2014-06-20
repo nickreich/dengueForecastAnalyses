@@ -22,11 +22,48 @@
 
 \maketitle
 
-<<defineWeek, echo=FALSE>>=
-CURRENT_WEEK <- 18
+<<dataPulling, echo=FALSE, message=FALSE>>=
+## All libraries used in the scripts.
+library(lubridate)
+library(parallel)
+library(RPostgreSQL)
+library(integrator)
+
+###########################################
+## local options: user/computer-specific ##
+###########################################
+## root_dir should be the parent directory for the dengueForecastAnalyses repository
+root_dir <- '~/Documents/code_versioned/denguePrediction/'
+pgsql <- "~/credentials/sql_zaraza.rds"
+options(mc.cores=24)
+DATA_THRU_WEEK <- 22
+
+## set up other file paths
+setwd(file.path(root_dir, 'dengueForecastAnalyses'))
+peripheral_data_dir <- '../dengue_data/peripheral_data/'
+aggregated_data_dir <- file.path(root_dir, 
+                                 'dengueForecastAnalyses',
+                                 'predictions',
+                                 paste0('week', DATA_THRU_WEEK))        
+#######################
+## pull data from DB ##
+#######################
+
+## setup data pulls, ssh connection to zaraza needs to be established
+link <- db_connector(pgsql)
+
+## helper functions for aggregation 
+source('../dengue/data_processing/stable_biweek_function.R')
+
+## pull data and aggregate
+source('../dengue/data_aggregation/counts_by_disease+province+date_sick_biweek+date_sick_year.R')
+
+## put into wide format
+source('code/create_standard_wide_format.R')
 @
 
-<<setup, echo=FALSE, message=FALSE>>=
+
+<<setupForecastingCode, echo=FALSE, message=FALSE>>=
 require(xtable)
 require(ggplot2)
 require(reshape2)
@@ -34,7 +71,7 @@ setwd("~/Documents/code_versioned/spamd/")
 source("trunk/source/dengpred/R/Utility.r")
 source.deng.pred("trunk/source/dengpred/R/")
 source("trunk/manuscripts/realTimeForecasting/code/spatialPlotting.R")
-load(file.path(aggregated_data_dir, 'standard_wide_format', fname))
+load(file.path(aggregated_data_dir, fname))
 load("trunk/manuscripts/realTimeForecasting/predictions/THA_adm1.RData")
 prov_data <- read.csv("trunk/manuscripts/realTimeForecasting/predictions/thaiProvinces.csv")
 @
@@ -69,7 +106,7 @@ dat <- new.cntry.data(case.counts = count_matrix,
 
 <<runForecasts, echo=FALSE, message=FALSE, cache=TRUE>>=
 ## run forecasts
-cutoff_date <- 2014 + (CURRENT_WEEK-8)/52 ## starting 8 weeks ago
+cutoff_date <- 2014 + (DATA_THRU_WEEK-8)/52 ## starting 8 weeks ago
 den_sub  <- subset(dat, t.criteria=dat@t<cutoff_date)
 den_smooth <- smooth.cdata(den_sub)
 
@@ -81,13 +118,13 @@ den_mdl <- fit.cntry.pred.mdl(den_smooth, num.tops=3, cor.lags=1)
 den_forecast = forecast(den_mdl, den_smooth, steps=6, stochastic=T, verbose=T, 
                         MC.sims=100, predictions.only=T, num.cores=18)
 outbreak.prob <- get.outbreak.probability(den_forecast, den_smooth)
-colnames(outbreak.prob) <- paste("week", CURRENT_WEEK-seq(8, -2, by=-2))
+colnames(outbreak.prob) <- paste("week", DATA_THRU_WEEK-seq(8, -2, by=-2))
 @
 
 <<outbreakProbByRegion, echo=FALSE, fig.cap="Average outbreak probabilities (shown as percentages) for each MOPH region at the predicted biweekly timepoints.">>=
 prov_region <- prov_data[match(dat@loc.info@data$FIPS_ADMIN, prov_data$fips), "MOPH_Admin_Code"]
 outbreak_prob_by_region <- aggregate(outbreak.prob, by=list(region=prov_region), FUN=mean)
-#colnames(outbreak_prob_by_region) <- c("region", paste("week", CURRENT_WEEK-seq(8, -2, by=-2)))
+#colnames(outbreak_prob_by_region) <- c("region", paste("week", DATA_THRU_WEEK-seq(8, -2, by=-2)))
 melted_outbreak_probs <- melt(outbreak_prob_by_region, id.vars="region")
 ggplot(melted_outbreak_probs) + theme(legend.position="none") + xlab(NULL) + ylab(NULL) +
         scale_fill_gradient2(low="palegoldenrod", mid="orange", high="red", midpoint=.5) +
@@ -97,9 +134,9 @@ ggplot(melted_outbreak_probs) + theme(legend.position="none") + xlab(NULL) + yla
 @
 
 \section*{Executive summary}
-This file presents the current forecasts for dengue fever in Thailand, based on data from the Thai Ministry of Public Health. The data in this report was transmitted to researchers at UMass-Amherst and Johns Hopkins University and runs through surveillance ``Week \Sexpr{CURRENT_WEEK}'' of 2014. 
+This file presents the current forecasts for dengue fever in Thailand, based on data from the Thai Ministry of Public Health. The data in this report was transmitted to researchers at UMass-Amherst and Johns Hopkins University and runs through surveillance ``Week \Sexpr{DATA_THRU_WEEK}'' of 2014. 
 
-The forecasts presented here are based on models that have been fit to data from Week 1 2004 through Week \Sexpr{CURRENT_WEEK-8} 2014. Based on historical reporting patterns, we have seen that most provinces take up to 8 weeks to have fully reported data. So we have gone back 8 weeks from the current time, and predicted forward 12 weeks (or 6 bi-week periods). Our model creates forecasts for each of the 77 Thai provinces. For each province, the forecast is based on (1) seasonal dynamics of dengue in that province, and (2) observed case counts at the previous time-point from that province and from two other provinces that have historically shown strong correlations with this one.  
+The forecasts presented here are based on models that have been fit to data from Week 1 2004 through Week \Sexpr{DATA_THRU_WEEK-8} 2014. Based on historical reporting patterns, we have seen that most provinces take up to 8 weeks to have fully reported data. So we have gone back 8 weeks from the current time, and predicted forward 12 weeks (or 6 bi-week periods). Our model creates forecasts for each of the 77 Thai provinces. For each province, the forecast is based on (1) seasonal dynamics of dengue in that province, and (2) observed case counts at the previous time-point from that province and from two other provinces that have historically shown strong correlations with this one.  
 
 {\bf These forecasts should be considered preliminary drafts, as we are still working on validating these models and results.} 
 
@@ -107,15 +144,15 @@ The forecasts presented here are based on models that have been fit to data from
 \caption{Summary of relevant dates for this report}
 \begin{center}
 \begin{tabular}{rl}
-Data received for: & Week \Sexpr{CURRENT_WEEK} (biweek \Sexpr{CURRENT_WEEK/2}) \\
-Data assumed complete through: & Week \Sexpr{CURRENT_WEEK-8} (biweek \Sexpr{(CURRENT_WEEK-8)/2}) \\
+Data received for: & Week \Sexpr{DATA_THRU_WEEK} (biweek \Sexpr{DATA_THRU_WEEK/2}) \\
+Data assumed complete through: & Week \Sexpr{DATA_THRU_WEEK-8} (biweek \Sexpr{(DATA_THRU_WEEK-8)/2}) \\
 Forecasts made for: & Biweeks 
-\Sexpr{(CURRENT_WEEK-8)/2+1}, 
-\Sexpr{(CURRENT_WEEK-8)/2+2}, 
-\Sexpr{(CURRENT_WEEK-8)/2+3}, 
-\Sexpr{(CURRENT_WEEK-8)/2+4}, 
-\Sexpr{(CURRENT_WEEK-8)/2+5}, 
-\Sexpr{(CURRENT_WEEK-8)/2+6} \\
+\Sexpr{(DATA_THRU_WEEK-8)/2+1}, 
+\Sexpr{(DATA_THRU_WEEK-8)/2+2}, 
+\Sexpr{(DATA_THRU_WEEK-8)/2+3}, 
+\Sexpr{(DATA_THRU_WEEK-8)/2+4}, 
+\Sexpr{(DATA_THRU_WEEK-8)/2+5}, 
+\Sexpr{(DATA_THRU_WEEK-8)/2+6} \\
 \end{tabular}
 \end{center}
 \label{default}
@@ -141,14 +178,14 @@ for(prov in 1:nrow(dat)){
         start <- 2012
         idx <- which(dat@t>=start & dat@t<2015)
         top <- max(dat[prov,idx], den_forecast[prov,], na.rm=TRUE)
-        plot.prediction(prov, den_forecast, ylim=c(0, top), xlim=c(start, 2014+(CURRENT_WEEK+3)/52), lwd=2, xaxt="n")
+        plot.prediction(prov, den_forecast, ylim=c(0, top), xlim=c(start, 2014+(DATA_THRU_WEEK+3)/52), lwd=2, xaxt="n")
         axis(1, at=2012:2014, labels=FALSE)
         axis(1, at=seq(2012.5, 2014.5, by=1), labels=2012:2014, 
              tick=FALSE, line=-.75)
         lines(dat@t, dat[prov,], col="red", lwd=2)
         #lines(den_smooth@t, den_smooth[prov,], col="red", lwd=2)
-        abline(v=2014+(CURRENT_WEEK-8)/52, lty=2, col="gray", lwd=2)
-        abline(v=2014+CURRENT_WEEK/52, lty=2, col="gray", lwd=2)
+        abline(v=2014+(DATA_THRU_WEEK-8)/52, lty=2, col="gray", lwd=2)
+        abline(v=2014+DATA_THRU_WEEK/52, lty=2, col="gray", lwd=2)
         text(start, y=top*.9, labels=dat@names[prov], cex=1.5, pos=4)
 }
 @
@@ -162,7 +199,7 @@ for(i in 1:ncol(outbreak.prob)){
 }
 @
 
-<<makeSpatialPlotGG, eval=TRUE, dpi=200, echo=FALSE, message=FALSE, fig.cap="Outbreak probabilities", dev="png">>=
+<<makeSpatialPlotGG, eval=FALSE, dpi=200, echo=FALSE, message=FALSE, fig.cap="Outbreak probabilities", dev="png">>=
 ggplot.cntry.data(den_forecast, outbreak.prob)
 @
 
