@@ -44,3 +44,21 @@ den_mdl <- fit.cntry.pred.mdl(den_smooth, num.tops=3, cor.lags=1:3)
 
 saveRDS(den_mdl@loc.mdls[[1]]@data, file="predData.rds")
 
+## make structured datasets for comparisons
+bkkdata <- get.loc.pred.data(1, den_smooth, num.tops=3, cor.lags=1:3)
+saveRDS(bkkdata, file="predData_3prov_1-3lag.rds")
+
+bkkdata <- get.loc.pred.data(1, den_smooth, num.tops=3, cor.lags=5:15)
+saveRDS(bkkdata, file="predData_3prov_5-15lag.rds")
+
+bkkdata <- get.loc.pred.data(1, den_smooth, num.tops=10, cor.lags=1:3)
+saveRDS(bkkdata, file="predData_10prov_1-3lag.rds")
+
+bkkdata <- get.loc.pred.data(1, den_smooth, num.tops=10, cor.lags=5:15)
+saveRDS(bkkdata, file="predData_10prov_5-15lag.rds")
+
+bkkdata <- get.loc.pred.data(1, den_smooth, num.tops=76, cor.lags=1:3)
+saveRDS(bkkdata, file="predData_76prov_1-3lag.rds")
+
+bkkdata <- get.loc.pred.data(1, den_smooth, num.tops=76, cor.lags=5:15)
+saveRDS(bkkdata, file="predData_76prov_5-15lag.rds")
