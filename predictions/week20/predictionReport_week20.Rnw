@@ -56,7 +56,7 @@ link <- db_connector(pgsql)
 source('../dengue/data_processing/stable_biweek_function.R')
 
 ## pull data and aggregate
-source('../dengue/data_aggregation/counts_by_disease+province+date_sick_biweek+date_sick_year.R', echo=TRUE)
+source('../dengue/data_aggregation/counts_by_disease+province+date_sick_biweek+date_sick_year.R')
 
 ## put into wide format
 source('code/create_standard_wide_format.R')
