@@ -22,13 +22,6 @@ knit(paste0(knitr_file_path, '.Rnw'))
 system(paste0("pdflatex ", knitr_file_path, ".tex"))
 system(paste0("pdflatex ", knitr_file_path, ".tex"))
 
-
-knit('predictionReport_week20.Rnw'))
-
-## tex it twice, for references to align
-system(paste0("pdflatex ", knitr_file_path, ".tex"))
-system(paste0("pdflatex ", knitr_file_path, ".tex"))
-
 toc <- Sys.time()
 
 (toc-tic)
