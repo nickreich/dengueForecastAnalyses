@@ -22,8 +22,10 @@ DATA_THRU_WEEK <- 20
 ## set up other file paths
 setwd(file.path(root_dir, 'dengueForecastAnalyses'))
 peripheral_data_dir <- '../dengue_data/peripheral_data/'
-aggregated_data_dir <- '../dengue_data/aggregated_data/standard_wide_format/'
-        
+aggregated_data_dir <- file.path(root_dir, 
+                                 'dengueForecastAnalyses',
+                                 'predictions',
+                                 paste0('week', DATA_THRU_WEEK))
 #######################
 ## pull data from DB ##
 #######################
