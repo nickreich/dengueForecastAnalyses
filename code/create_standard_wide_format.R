@@ -5,7 +5,7 @@
 require(reshape2)
 
 ## subset to include only DHF
-dhf_counts_by_province_biweek_year <- subset(counts_by_disease_province_biweek_year, disease==26)
+dhf_counts_by_province_biweek_year <- subset(counts, disease==26)
 
 ## make wide format of data
 cols_to_keep <- c("province", "date_sick_biweek", "date_sick_year", "count")

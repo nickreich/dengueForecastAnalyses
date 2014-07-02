@@ -199,7 +199,7 @@ for(i in 1:ncol(outbreak.prob)){
 }
 @
 
-<<makeSpatialPlotGG, eval=FALSE, dpi=200, echo=FALSE, message=FALSE, fig.cap="Outbreak probabilities", dev="png">>=
+<<makeSpatialPlotGG, eval=TRUE, dpi=200, echo=FALSE, message=FALSE, fig.cap="Outbreak probabilities", dev="png">>=
 ggplot.cntry.data(den_forecast, outbreak.prob)
 @
 
