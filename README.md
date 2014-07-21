@@ -3,7 +3,7 @@ dengueForecastAnalyses
 
 Code for running forecasts of dengue fever outbreaks in Thailand.
 
-The vision for the structure of this directory is that there would be subdirectories called code, reports, and forecasts. Also in the main directory, there would be a file called makeForecasts.R. Within that script, there is a single variable that is set, indicating up through what week you want forecasts run for.
+The vision for the structure of this directory is that there would be subdirectories called code, data, reports, and forecasts. Also in the main directory, there would be a file called makeForecasts.R. Within that script, there is a single variable that is set, indicating up through what week you want forecasts run for.
 
 That script would then create forecasts (for now, based on "spamd"-style general additive models with seasonality and lag terms from top correlated provinces). Forecasts would be generated and dumped in a standardized format into the forecasts folder. Reports would also be generated (if desired) for collaborators.
 
