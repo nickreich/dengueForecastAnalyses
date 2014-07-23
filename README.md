@@ -39,3 +39,9 @@ Each forecast txt file will have a table with the following columns present:
 * dengue_version: hash of the dengue git repo on zaraza used
 
 [NB: to save git last commit, you can run the R command `system("git rev-parse HEAD | cut -c1-10", intern=TRUE)` to retrieve the first 10 digits of the current commit hash into an R character value.]
+
+* change rpt\_date to analysis\_date
+* change recd\_date to delivery\_date
+* add to and from dates 
+* move db_connector() function to cruftery
+* add two columns for each repo (repo1\_name and repo1\_hash)

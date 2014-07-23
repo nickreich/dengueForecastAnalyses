@@ -42,7 +42,6 @@ library(parallel)
 library(RPostgreSQL)
 require(reshape2)
 require(dplyr)
-library(integrator) ## install_github('sakrejda/data-integrator/package_dir')
 library(cruftery)   ## install_github('sakrejda/cruftery/package_dir')
 
 ## helper functions for aggregation ## NOT NEEDED WITH cruftery?
@@ -133,7 +132,7 @@ den_smooth <- smooth.cdata(den_sub)
 den_mdl <- fit.cntry.pred.mdl(den_smooth, num.tops=3, cor.lags=1)
 
 den_forecast <- forecast(den_mdl, den_smooth, steps=6, stochastic=T, verbose=T, 
-                         MC.sims=1000, predictions.only=T, num.cores=18)
+                         MC.sims=1000, predictions.only=T, num.cores=CORES)
 
 ########################
 ## save forecast data ##
@@ -191,14 +190,24 @@ forecasts <- left_join(forecasts, melted_outbreak_prob)
 ## save the forecasts
 forecast_file <- paste0(format(Sys.Date(), "%Y%m%d"), 
                         '_forecast_week', 
-                        DATA_THROUGH_WEEK, 
-                        '.csv'))
+                        DATA_THRU_WEEK, 
+                        '.csv')
 
 write.csv(forecasts, file=file.path(root_dir, 
                                     'dengueForecastAnalyses',
                                     'forecasts',
-                                    forecast_file)
-                 
+                                    forecast_file))
+
+## save the original cntry.data object
+data_file <- paste0(format(Sys.Date(), "%Y%m%d"), 
+                    '_cntrydata_week', 
+                    DATA_THRU_WEEK, 
+                    '.rda')
+save(dat, file=file.path(root_dir, 
+                         'dengueForecastAnalyses',
+                         'forecasts',
+                         data_file))
+
 #########################
 ## generate the report ##
 #########################
