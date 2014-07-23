@@ -26,7 +26,7 @@ options(mc.cores=CORES)
 
 ## main repo
 setwd(file.path(root_dir, 'dengueForecastAnalyses'))
-gh_repo_hash <- system("git rev-parse HEAD | cut -c1-10", intern=TRUE)
+dFA_github_hash <- system("git rev-parse HEAD | cut -c1-10", intern=TRUE)
 
 ## folder with thai administrative data
 peripheral_data_dir <- '../dengue_data/peripheral_data/'
@@ -40,12 +40,9 @@ aggregated_data_dir <- file.path(root_dir,
 library(lubridate)
 library(parallel)
 library(RPostgreSQL)
-require(reshape2)
-require(dplyr)
+library(reshape2)
+library(dplyr)
 library(cruftery)   ## install_github('sakrejda/cruftery/package_dir')
-
-## helper functions for aggregation ## NOT NEEDED WITH cruftery?
-## source('../dengue/data_processing/stable_biweek_function.R')
 
 
 #######################
@@ -63,7 +60,7 @@ source('code/create_standard_wide_format.R')
 
 ## get dengue repo version
 setwd('../dengue/')
-dengue_repo_hash <- system("git rev-parse HEAD | cut -c1-10", intern=TRUE)
+dengue_zaraza_hash <- system("git rev-parse HEAD | cut -c1-10", intern=TRUE)
 
 
 ####################################
@@ -166,10 +163,12 @@ forecasts <-
                rpt_biweek = date_to_biweek(Sys.Date()),
                rpt_date = Sys.Date(),
                recd_date = DATE_DATA_RECEIVED,
-               gh_repo = "dengueForecastAnalyses",
-               gh_version = gh_repo_hash,
-               spamd_version = spamd_version,
-               dengue_version = dengue_repo_hash) %>%
+               repo1_name = "dengueForecastAnalyses-github",
+               repo1_hash = dFA_github_hash,
+               repo2_name = "dengue-zaraza",
+               repo2_hash = dengue_zaraza_hash,
+               repo3_name = "spamd-springloops"
+               repo3_hash = spamd_version) %>%
         select(-variable, -value)
 
 ## get outbreak probabilities
