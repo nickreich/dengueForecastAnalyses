@@ -6,6 +6,12 @@
 ## SET LOCAL OPTIONS ## 
 #######################
 
+## set dates
+FROM_DATE <- as.Date('1968-01-01')
+DELIVERY_DATE <- as.Date('2014-07-29')
+TO_DATE <- DELIVERY_DATE
+ANALYSIS_DATE <- Sys.Date()
+        
 ## modeling globals
 DATA_THRU_WEEK <- 26
 MODEL <- 'spamd_tops3_lag1'
@@ -29,7 +35,7 @@ setwd(file.path(root_dir, 'dengueForecastAnalyses'))
 dFA_github_hash <- system("git rev-parse HEAD | cut -c1-10", intern=TRUE)
 
 ## folder with thai administrative data
-peripheral_data_dir <- '../dengue_data/peripheral_data/'
+path_to_census_file <- '../dengue_data/peripheral_data/2010Census.csv'
 
 ## folder where data will be stored
 aggregated_data_dir <- file.path(root_dir, 
@@ -42,8 +48,18 @@ library(parallel)
 library(RPostgreSQL)
 library(reshape2)
 library(dplyr)
-library(cruftery)   ## install_github('sakrejda/cruftery/package_dir')
 
+## load cruftery functions
+## loading manually so we can retrieve/store the github hash 
+## can install via devtools::install_github('sakrejda/cruftery/package_dir')
+setwd(file.path(root_dir, 'cruftery'))
+file.sources = list.files(pattern="*.R$", full.names=TRUE, 
+                          ignore.case=TRUE)
+sapply(file.sources,source,.GlobalEnv)
+cruftery_github_hash <- system("git rev-parse HEAD | cut -c1-10", intern=TRUE)
+
+## switch back to main repo
+setwd(file.path(root_dir, 'dengueForecastAnalyses'))
 
 #######################
 ## pull data from DB ##
@@ -53,11 +69,24 @@ library(cruftery)   ## install_github('sakrejda/cruftery/package_dir')
 link <- db_connector(pgsql)
 
 ## pull data and aggregate, must be connected to zaraza
-source('../dengue/data_aggregation/counts_by_disease+province+date_sick_biweek+date_sick_year.R')
+new_counts <- import_case_counts(link=link, 
+                                 to_timepoint=TO_DATE,
+                                 from_timepoint=FROM_DATE,
+                                 delivery_timepoint=DELIVERY_DATE)
+old_counts <- import_old_case_counts(link=link)
+counts <- joint_old_new_cases(new_counts, old_counts)
+
+# ggplot(new_counts) + geom_raster(aes(x=date_sick_year+date_sick_biweek/26, y=province, fill=count)) + facet_wrap(~disease, ncol=1, scales="free_x")
 
 ## put into wide format, save all objects needed for prediction to aggregated_data
-source('code/create_standard_wide_format.R')
+pred_objects <- create_standard_wide_format(counts, keep_codes=26, 
+                                            path_to_census=path_to_census_file)
 
+fname <- paste0("counts_through_week_", DATA_THRU_WEEK, ".RData")
+save(pred_objects, file=file.path(aggregated_data_dir, fname))
+
+count_matrix <- pred_objects$count_matrix
+        
 ## get dengue repo version
 setwd('../dengue/')
 dengue_zaraza_hash <- system("git rev-parse HEAD | cut -c1-10", intern=TRUE)
@@ -78,11 +107,11 @@ source("trunk/manuscripts/realTimeForecasting/code/spatialPlotting.R")
 ## find, set province info ##
 #############################
 
-load("trunk/manuscripts/realTimeForecasting/predictions/THA_adm1.RData")
+load("trunk/manuscripts/realTimeForecasting/predictions/THA_adm1.RData") ## loads object called gadm
 prov_data <- read.csv("trunk/manuscripts/realTimeForecasting/predictions/thaiProvinces.csv")
 
 ## define locations for which forecasts will be created
-pnames <- as.character(province_names)
+pnames <- as.character(pred_objects$province_names)
 
 ## merging Nong Khai and Bueng Kan
 idx_NK <- which(pnames=="Nong Khai")
@@ -92,9 +121,9 @@ count_matrix[idx_BK,][is.na(count_matrix[idx_BK,])] <- 0
 
 count_matrix[idx_NK,] <- count_matrix[idx_NK,] + count_matrix[idx_BK,]
 count_matrix <- count_matrix[-idx_BK,]
-fips <- fips[-idx_BK]
+fips <- pred_objects$fips[-idx_BK]
 pnames <- pnames[-idx_BK]
-pop <- pop[-idx_BK]
+pop <- pred_objects$pop[-idx_BK]
 
 
 ##############################
@@ -104,7 +133,7 @@ pop <- pop[-idx_BK]
 ## matching FIPS into the spatial data frame
 gadm@data$FIPS_ADMIN <- as.character(fips[match(gadm@data$NAME_1, pnames)])
 dat <- new.cntry.data(case.counts = count_matrix,
-                      time.info = time_matrix,
+                      time.info = pred_objects$time_matrix,
                       fips = fips,
                       names = pnames,
                       pop.data = pop,
@@ -165,8 +194,8 @@ forecasts <-
                recd_date = DATE_DATA_RECEIVED,
                repo1_name = "dengueForecastAnalyses-github",
                repo1_hash = dFA_github_hash,
-               repo2_name = "dengue-zaraza",
-               repo2_hash = dengue_zaraza_hash,
+               repo2_name = "cruftery-github",
+               repo2_hash = cruftery_github_hash,
                repo3_name = "spamd-springloops"
                repo3_hash = spamd_version) %>%
         select(-variable, -value)
