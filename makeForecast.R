@@ -169,25 +169,18 @@ forecast_data$pname <- rownames(forecast_data)
 forecast_data$numid <- 1:(den_forecast@n.locs)
 forecasts <- tbl_df(melt(forecast_data, id.vars = c("pid", "pname", "numid")))
 
-## add prediction intervals
-forecasts$lb <- forecasts$ub <- NA
-
-for (i in 1:(den_forecast@n.locs)){
-        idx <- which(forecasts$numid == i)
-        forecasts[idx,c("lb", "ub")] <- predint(den_forecast, i, 0.95)
-}
-
 ## add dates, round counts, drop unneeded columns
 forecasts <- 
         forecasts %>% 
         mutate(biweek = as.numeric(substr(variable, 7, 8)),
                year = as.numeric(substr(variable, 2, 5)),
-               count = round(value),
+               predicted_count = round(value),
                model = MODEL,
-               rpt_year = year(Sys.time()),
-               rpt_biweek = date_to_biweek(Sys.Date()),
-               rpt_date = Sys.Date(),
-               recd_date = DATE_DATA_RECEIVED,
+               from_date = FROM_DATE,
+               to_date = TO_DATE,
+               delivery_date = DELIVERY_DATE,
+               analysis_date = ANALYSIS_DATE,
+               analysis_biweek = date_to_biweek(ANALYSIS_DATE),
                repo1_name = "dengueForecastAnalyses-github",
                repo1_hash = dFA_github_hash,
                repo2_name = "cruftery-github",
@@ -195,6 +188,14 @@ forecasts <-
                repo3_name = "spamd-springloops",
                repo3_hash = spamd_version) %>%
         select(-variable, -value)
+
+## add prediction intervals
+forecasts$lb <- forecasts$ub <- NA
+
+for (i in 1:(den_forecast@n.locs)){
+        idx <- which(forecasts$numid == i)
+        forecasts[idx,c("lb", "ub")] <- predint(den_forecast, i, 0.95)
+}
 
 ## get outbreak probabilities
 outbreak_prob <- tbl_df(data.frame(get.outbreak.probability(den_forecast, den_smooth)))
