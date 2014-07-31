@@ -52,7 +52,7 @@ library(dplyr)
 ## load cruftery functions
 ## loading manually so we can retrieve/store the github hash 
 ## can install via devtools::install_github('sakrejda/cruftery/package_dir')
-setwd(file.path(root_dir, 'cruftery'))
+setwd(file.path(root_dir, 'cruftery', 'package_dir', 'R'))
 file.sources = list.files(pattern="*.R$", full.names=TRUE, 
                           ignore.case=TRUE)
 sapply(file.sources,source,.GlobalEnv)
@@ -87,10 +87,6 @@ save(pred_objects, file=file.path(aggregated_data_dir, fname))
 
 count_matrix <- pred_objects$count_matrix
         
-## get dengue repo version
-setwd('../dengue/')
-dengue_zaraza_hash <- system("git rev-parse HEAD | cut -c1-10", intern=TRUE)
-
 
 ####################################
 ## source the spamd modeling code ##
@@ -196,7 +192,7 @@ forecasts <-
                repo1_hash = dFA_github_hash,
                repo2_name = "cruftery-github",
                repo2_hash = cruftery_github_hash,
-               repo3_name = "spamd-springloops"
+               repo3_name = "spamd-springloops",
                repo3_hash = spamd_version) %>%
         select(-variable, -value)
 
@@ -208,7 +204,7 @@ melted_outbreak_prob <- tbl_df(melt(outbreak_prob, id.vars = c("pid")))
 melted_outbreak_prob <- 
         melted_outbreak_prob %>%
         mutate(biweek = as.numeric(substr(variable, 7, 8)),
-               year = as.numeric(substr(variable, 2, 5)),
+               year = as.numeric(substr(variable, 1, 4)),
                outbreak.prob = value) %>%
         select(-variable, -value)
 
