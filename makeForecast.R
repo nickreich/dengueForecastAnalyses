@@ -10,8 +10,7 @@
 FROM_DATE <- as.Date('1968-01-01')
 DELIVERY_DATE <- as.Date('2014-07-29')
 TO_DATE <- DELIVERY_DATE - 7*8 ## move back 8 weeks
-ANALYSIS_DATE <- Sys.Date()
-        
+
 ## modeling globals
 MODEL <- 'spamd_tops3_lag1'
 
@@ -24,6 +23,10 @@ pgsql <- '~/credentials/sql_zaraza.rds'
 #######################
 ## USE LOCAL OPTIONS ## 
 #######################
+
+## additional date manipulation
+DELIVERY_DATE_STRING <- format(DELIVERY_DATE, "%Y%m%d") ## for use in filenames
+ANALYSIS_DATE <- Sys.Date()
 
 ## set number of computing cores
 options(mc.cores=CORES)
@@ -46,9 +49,6 @@ library(parallel)
 library(RPostgreSQL)
 library(reshape2)
 library(dplyr)
-
-## set DATA_THRU_WEEK
-DATA_THRU_WEEK <- week(DELIVERY_DATE)
 
 ## load cruftery functions
 ## loading manually so we can retrieve/store the github hash 
@@ -83,7 +83,7 @@ counts <- joint_old_new_cases(new_counts, old_counts)
 pred_objects <- create_standard_wide_format(counts, keep_codes=26, 
                                             path_to_census=path_to_census_file)
 
-fname <- paste0("counts_through_week_", DATA_THRU_WEEK, ".RData")
+fname <- paste0("counts_through_", DELIVERY_DATE_STRING, ".RData")
 save(pred_objects, file=file.path(aggregated_data_dir, fname))
 
 count_matrix <- pred_objects$count_matrix
@@ -137,12 +137,10 @@ dat <- new.cntry.data(case.counts = count_matrix,
                       loc.info = gadm)
 
 
-################################
-## subset and smooth the data ##
-################################
-cutoff_date <- 2014 + (DATA_THRU_WEEK-8)/52 ## starting 8 weeks ago
-den_sub  <- subset(dat, t.criteria=dat@t<cutoff_date)
-den_smooth <- smooth.cdata(den_sub)
+#####################
+## smooth the data ##
+#####################
+den_smooth <- smooth.cdata(dat)
 
 
 ###################
@@ -215,8 +213,8 @@ forecasts <- left_join(forecasts, melted_outbreak_prob)
 
 ## save the forecasts
 forecast_file <- paste0(format(Sys.Date(), "%Y%m%d"), 
-                        '_forecast_week', 
-                        DATA_THRU_WEEK, 
+                        '_forecast_', 
+                        DELIVERY_DATE_STRING, 
                         '.csv')
 
 write.csv(forecasts, file=file.path(root_dir, 
@@ -226,8 +224,8 @@ write.csv(forecasts, file=file.path(root_dir,
 
 ## save the original cntry.data object
 data_file <- paste0(format(Sys.Date(), "%Y%m%d"), 
-                    '_cntrydata_week', 
-                    DATA_THRU_WEEK, 
+                    '_cntrydata_', 
+                    DELIVERY_DATE_STRING, 
                     '.rda')
 save(dat, file=file.path(root_dir, 
                          'dengueForecastAnalyses',
