@@ -9,13 +9,11 @@
 ## set dates
 FROM_DATE <- as.Date('1968-01-01')
 DELIVERY_DATE <- as.Date('2014-07-29')
-TO_DATE <- DELIVERY_DATE
+TO_DATE <- DELIVERY_DATE - 7*8 ## move back 8 weeks
 ANALYSIS_DATE <- Sys.Date()
         
 ## modeling globals
-DATA_THRU_WEEK <- 26
 MODEL <- 'spamd_tops3_lag1'
-DATE_DATA_RECEIVED <- as.Date('2014-07-10')
 
 ## define machine-specific properties/folders
 CORES <- 20 
@@ -48,6 +46,9 @@ library(parallel)
 library(RPostgreSQL)
 library(reshape2)
 library(dplyr)
+
+## set DATA_THRU_WEEK
+DATA_THRU_WEEK <- week(DELIVERY_DATE)
 
 ## load cruftery functions
 ## loading manually so we can retrieve/store the github hash 
