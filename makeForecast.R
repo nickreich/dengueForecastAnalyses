@@ -207,7 +207,7 @@ melted_outbreak_prob <-
         melted_outbreak_prob %>%
         mutate(biweek = as.numeric(substr(variable, 7, 8)),
                year = as.numeric(substr(variable, 1, 4)),
-               outbreak.prob = value) %>%
+               outbreak_prob = value) %>%
         select(-variable, -value)
 
 ## join forecasts and outbreak probabilities
