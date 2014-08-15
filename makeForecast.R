@@ -49,18 +49,16 @@ library(parallel)
 library(RPostgreSQL)
 library(reshape2)
 library(dplyr)
+library(httr)
+library(devtools)
 
-## load cruftery functions
-## loading manually so we can retrieve/store the github hash 
-## can install via devtools::install_github('sakrejda/cruftery/package_dir')
-setwd(file.path(root_dir, 'cruftery', 'package_dir', 'R'))
-file.sources = list.files(pattern="*.R$", full.names=TRUE, 
-                          ignore.case=TRUE)
-sapply(file.sources,source,.GlobalEnv)
-cruftery_github_hash <- system("git rev-parse HEAD | cut -c1-10", intern=TRUE)
+## load and store version for cruftery
+response <- GET("https://api.github.com/repos/sakrejda/cruftery/git/refs/heads/master")
+hash <- content(response)[['object']][['sha']]
 
-## switch back to main repo
-setwd(file.path(root_dir, 'dengueForecastAnalyses'))
+install_github(rep='sakrejda/cruftery/package_dir', ref=hash)
+library(cruftery)
+
 
 #######################
 ## pull data from DB ##
