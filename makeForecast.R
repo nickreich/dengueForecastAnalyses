@@ -54,9 +54,9 @@ library(devtools)
 
 ## load and store version for cruftery
 response <- GET("https://api.github.com/repos/sakrejda/cruftery/git/refs/heads/master")
-hash <- content(response)[['object']][['sha']]
+cruftery_github_hash <- content(response)[['object']][['sha']]
 
-install_github(rep='sakrejda/cruftery/package_dir', ref=hash)
+install_github(rep='sakrejda/cruftery/package_dir', ref=cruftery_github_hash)
 library(cruftery)
 
 
