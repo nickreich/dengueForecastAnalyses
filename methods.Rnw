@@ -18,12 +18,13 @@
 
 \section{Notation for real-time forecast timeline}
 
-For a given year, we define $t_1$ as January 1st, at 00h00m00s and $t_{27}$ as December 31st, 11h59m59s. Every year is divided up into 26 bi-weeks ($b_1$ through $b_{26}$, where $b_k$ represents the interval $[t_{k}, t_{k+1})$), each of either 14 or 15 days (see table TK). [We may need to make this more general to account for years...] 
+For a given year, every date is mapped to a particular biweek in that year. We define the first biweek of every year as beginning on January 1st, at 00h00m00s and the last as ending on December 31st, 11h59m59s. Every year is defined to contain exactly 26 biweeks. To make predictions on the biweekly scale, daily case counts are aggregated into their respective biweek. Counts for biweeks that have 15 days are standardized by multiplying the count by $\frac{14}{15}$ and rounding to the nearest integer. The explicit Julian calendar day to biweek mapping is given in Table \ref{tab:biweekMap}.
 
-To make predictions on the biweekly scale, daily case counts are aggregated into their respective biweek. Counts for biweeks that have 15 days are standardized by multiplying the count by $\frac{14}{15}$ and rounding to the nearest integer.
+A generic biweek $b_k$ is defined as an interval $[t_{k}, t_{k+1})$ where $t_k$ is the time where the biweeks begins (e.g. Jan 1, 00h00m00s) and $t_{k+1}$ is the time when the biweeks ends (e.g. Jan 14, 11h59m59s). Every dataset is divided up into $N$ bi-weeks ($b_1$ through $b_{N}$), each of either 14 or 15 days (see Table \ref{tab:biweekMap}). 
 
-Every forecast made specifies the following dates: a ``to-date'' ($t_{to}$), a ``delivery-date'' ($t_{del}$), and an ``analysis-date'' ($t_{an}$). The to-date specifies that the current forecast will only use cases whose onset date is equal to or less than $t_{to}$. The delivery-date specifies that the current forecast will only use cases that were delivered, or arrived in the master dataset on or before $t_{del}$. The analysis-date specifies when a given forecast was run.
+Every forecast made specifies the following dates: a ``to-date'' ($t_{to}$), a ``delivery-date'' ($t_{del}$), and an ``analysis-date'' ($t_{an}$). The to-date specifies that the current forecast will only use cases whose onset date is equal to or less than $t_{to}$. The delivery-date specifies that the current forecast will only use cases that were delivered on or before $t_{del}$. The analysis-date specifies when a given forecast was run.
 
-A forecast also may specify a biweek lag, $l$, the number of biweeks back into the past data will be ignored. For example, if $l=4$ and $t_{del}$ lies in $b_k=[t_{k}, t_{k+1})$, then the forecast will assume that data for the past $l$ biweeks are systematically underreported and that biweek $b_{k-l-1}$ and all prior biweeks are complete.
+
+A forecast also may specify a biweek lag, $l$, the number of biweeks back into the past data will be ignored. For example, if $l=4$ and $t_{del}$ lies in $b_k=[t_{k}, t_{k+1})$, then the forecast will assume that data for the past $l$ whole biweeks are systematically underreported and that biweek $b_{k-l-1}$ and all prior biweeks are complete.
 
 \end{document}
